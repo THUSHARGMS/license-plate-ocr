@@ -1,16 +1,14 @@
 import streamlit as st
-import easyocr
 import cv2
 import numpy as np
+import pytesseract
 import re
 from PIL import Image
-
-# Load OCR
 import os
+
 os.environ["OMP_NUM_THREADS"] = "1"
-import streamlit as st
+
 st.set_page_config(page_title="License Plate OCR", layout="centered")
-reader = easyocr.Reader(['en'], gpu=False)
 
 def clean_text(text):
     text = text.upper()
@@ -21,17 +19,19 @@ def read_plate(image):
     img = np.array(image)
     h, w = img.shape[:2]
 
-    # Focus lower region
+    # Focus lower region (plate area)
     crop = img[int(h*0.5):h, int(w*0.2):int(w*0.8)]
 
     gray = cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY)
+    gray = cv2.GaussianBlur(gray, (5,5), 0)
     _, thresh = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY)
 
-    results = reader.readtext(thresh, detail=0)
+    # OCR using Tesseract
+    text = pytesseract.image_to_string(thresh)
 
-    if len(results) > 0:
-        text = clean_text(" ".join(results))
-    else:
+    text = clean_text(text)
+
+    if text.strip() == "":
         text = "No plate detected"
 
     # Draw box
@@ -43,7 +43,7 @@ def read_plate(image):
 
     return img_draw, text
 
-# UI
+
 st.title("🚗 License Plate Recognition")
 
 uploaded_file = st.file_uploader("Upload image", type=["jpg","png","jpeg"])
