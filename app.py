@@ -6,6 +6,10 @@ import re
 from PIL import Image
 
 # Load OCR
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+import streamlit as st
+st.set_page_config(page_title="License Plate OCR", layout="centered")
 reader = easyocr.Reader(['en'], gpu=False)
 
 def clean_text(text):
